@@ -1,0 +1,29 @@
+{
+    "Welcome": "Welcome to use the Datadisk file management system",
+    "login": "login",
+    "remember password": "remember password",
+    "forgot password": "forgot password",
+    "username": "username",
+    "password": "password",
+    "placeholder": {
+        "username": "please enter username",
+        "password": "please enter password"
+    },
+    "Username cannot be left blank": "Username cannot be left blank",
+    "Password cannot be left blank": "Username cannot be left blank",
+    "username or password error": "username or password error",
+    "user is disabled": "user is disabled, please contact the administrator",
+    "menu": {
+        "recent": "recent",
+        "star": "star",
+        "files": "files",
+        "mydocs": "mydocs",
+        "tags": "tags",
+        "contacts": "contacts",
+        "group": "group",
+        "audit": "audit",
+        "setting": "setting",
+        "logout": "logout"
+    },
+    "current login": "current user"
+}

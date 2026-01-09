@@ -1,0 +1,269 @@
+.recent-files {
+  padding: 16px 16px 8px;
+}
+
+.recent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.recent-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.recent-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.recent-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.recent-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.recent-toolbar .recent-search {
+  height: 24px;
+  border: 1px solid transparent;
+  background: #f1f5f9 !important;
+  padding: 0 22px 0 8px;
+  min-width: 170px;
+  box-shadow: none;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.recent-search:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.recent-search::placeholder {
+  color: #94a3b8;
+}
+
+.recent-search-clear {
+  position: absolute;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  width: 18px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+}
+
+.recent-search-clear:hover {
+  color: #475569;
+}
+
+.recent-refresh {
+  height: 28px;
+  width: 28px;
+  padding: 0;
+}
+
+.recent-list {
+  max-height: calc(100vh - 140px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 4px;
+}
+
+.recent-card {
+  border-color: #e2e8f0;
+}
+
+.recent-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+}
+
+.recent-card-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.recent-link {
+  color: #2563eb;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.recent-link:hover {
+  color: #1d4ed8;
+}
+
+.recent-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.recent-path {
+  font-size: 12px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.recent-card-top,
+.recent-card-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recent-card-bottom {
+  color: #94a3b8;
+}
+
+.recent-delete {
+  height: 24px;
+  width: 24px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: #64748b;
+}
+
+.recent-delete:hover {
+  border-color: #cbd5f5;
+  color: #1f2937;
+}
+
+.recent-tag {
+  padding: 2px 8px;
+  background: #e2e8f0;
+  color: #334155;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.recent-empty {
+  border: 1px dashed #e2e8f0;
+  border-radius: 16px;
+  padding: 32px 16px;
+  text-align: center;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.recent-empty-illustration {
+  position: relative;
+  width: 120px;
+  height: 72px;
+  margin: 0 auto 12px;
+}
+
+.recent-empty-ring {
+  position: absolute;
+  inset: 8px 20px;
+  border-radius: 999px;
+  border: 2px solid #cbd5f5;
+  background: rgba(226, 232, 240, 0.4);
+}
+
+.recent-empty-dot {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #94a3b8;
+  top: 16px;
+  left: 18px;
+}
+
+.recent-empty-bar {
+  position: absolute;
+  height: 10px;
+  width: 60px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  right: 10px;
+  bottom: 12px;
+}
+
+.recent-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.recent-empty-subtitle {
+  font-size: 13px;
+}
+
+.recent-filters {
+  display: inline-flex;
+  gap: 6px;
+  padding: 2px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.filter-pill {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #475569;
+  background: transparent;
+  border-radius: 999px;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+  background: rgba(148, 163, 184, 0.2);
+  color: #1f2937;
+}
+
+.filter-pill.active {
+  background: #0f172a;
+  color: #fff;
+}

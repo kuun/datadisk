@@ -1,0 +1,112 @@
+.task-card {
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-row--header {
+  justify-content: space-between;
+}
+
+.task-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.task-subline {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.task-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.task-delete-button {
+  height: 22px;
+  width: 22px;
+  border-radius: 999px;
+  border: none;
+  color: #64748b;
+  gap: 6px;
+}
+
+.task-delete-button:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.label {
+  width: 40px;
+  color: #64748b;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.task-chip {
+  background: #f2f4f7;
+  color: #1f2d3d;
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
+.task-paths {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.task-path-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-progress-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.task-error {
+  color: #c0362c;
+  font-size: 12px;
+}
+
+.mono {
+  font-family: Menlo, Consolas, monospace;
+  word-break: break-all;
+  font-size: 11px;
+}
+
+.section-title {
+  font-weight: 600;
+  margin: 6px 0 4px;
+}
+
+.section-body {
+  background: #f7f9fb;
+  padding: 6px;
+  border-radius: 4px;
+  max-height: 180px;
+  overflow: auto;
+}

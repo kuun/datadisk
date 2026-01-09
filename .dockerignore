@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+target/
+webapp/node_modules/
+webapp/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local data
+data/
+testdir/
+
+# Local config
+etc/datadisk.toml
+etc/db.toml
+
+# Docker
+.docker/
+
+# Claude
+.claude/
+
+# Misc
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

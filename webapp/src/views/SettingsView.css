@@ -1,0 +1,101 @@
+.settings-layout {
+  height: calc(100vh - 60px);
+  display: flex;
+  background: #f8fafc;
+}
+
+.settings-aside {
+  width: 240px;
+  padding: 20px 16px;
+  border-right: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.settings-aside-header {
+  margin-bottom: 16px;
+}
+
+.settings-aside-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.settings-aside-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.settings-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-group-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.settings-menu a {
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #334155;
+  transition: all 0.2s ease;
+}
+
+.settings-menu a.active {
+  background: #0f172a;
+  color: #fff;
+}
+
+.settings-menu a:hover {
+  background: #e2e8f0;
+}
+
+.settings-main {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+}
+
+.settings-page {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.settings-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.settings-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.settings-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px -25px rgba(15, 23, 42, 0.4);
+}

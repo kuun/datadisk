@@ -1,0 +1,26 @@
+# Datadisk Docker Configuration
+
+# Server address
+addr = "0.0.0.0:8080"
+
+# Root directory for file storage
+root_dir = "/app/data"
+
+# Casbin configuration file path
+casbin_conf = "/app/etc/casbin_model.conf"
+
+# Configuration directory (where sys_inited and db.toml are stored)
+config_dir = "/app/data/etc/"
+
+# Maximum upload file size in bytes (default: 10GB)
+max_upload_size = 10737418240
+
+# Logging configuration
+[log]
+level = "info"
+
+# OnlyOffice document server configuration
+[doc]
+doc_server_url = "http://onlyoffice:80"
+doc_secret = "DQxdmuXny4Tuq5fTJJ6f8lSiwGSSFt5Z"
+datadisk_url = "http://datadisk:8080"

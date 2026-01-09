@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+html,
+body,
+#app {
+  margin: 0px;
+  font-weight: normal;
+  height: 100%;
+}
+
+.splitpanes .splitpanes__pane {
+  transition: none !important;
+  background: #ffffff !important;
+}
+
+.gutter {
+  background-color: #f0f0f0;
+}
+
+.gutter.gutter-horizontal {
+  cursor: col-resize;
+}
+
+.split {
+  display: flex;
+  height: 100%;
+}
+
+.btn-pill {
+  border-radius: 999px !important;
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+}

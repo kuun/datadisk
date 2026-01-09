@@ -1,0 +1,54 @@
+#global-uploader {
+  position: fixed;
+  z-index: 20;
+  right: 15px;
+  bottom: 15px;
+  box-sizing: border-box;
+}
+
+#global-uploader.global-uploader-single {
+  position: relative;
+  right: auto;
+  bottom: auto;
+}
+
+#global-uploader .file-panel {
+  width: 520px;
+  background-color: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 7px 7px 0 0;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+#global-uploader .file-title {
+  display: flex;
+  height: 40px;
+  line-height: 40px;
+  padding: 0 15px;
+  border-bottom: 1px solid #ddd;
+}
+
+#global-uploader .file-title .operate {
+  flex: 1;
+  text-align: right;
+}
+
+#global-uploader .file-list {
+  height: 240px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: #fff;
+  transition: all 0.3s;
+}
+
+#global-uploader .file-panel.collapse .file-list {
+  height: 0;
+}
+
+#global-uploader .no-file {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #999;
+}

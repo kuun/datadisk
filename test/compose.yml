@@ -1,0 +1,17 @@
+services:
+  db:
+    image: docker.1ms.run/library/postgres
+    restart: always
+    environment:
+      POSTGRES_USER: "datadisk"
+      POSTGRES_PASSWORD: "data@disk"
+      POSTGRES_DB: "datadisk"
+    ports:
+      - "5433:5432"
+    volumes:
+        - ./data:/var/lib/postgresql
+  documentserver:
+    image: docker.1ms.run/onlyoffice/documentserver
+    restart: always
+    ports:
+      - "8082:80"

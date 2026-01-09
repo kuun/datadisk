@@ -1,0 +1,160 @@
+.department-manager {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.department-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.department-actions .toolbar-segment {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.department-actions .segment-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #475569;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(148, 163, 184, 0.35);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.department-actions .segment-btn:last-child {
+  border-right: none;
+}
+
+.department-actions .segment-btn:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: #1f2937;
+}
+
+.department-actions .segment-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+/* 更多按钮 */
+.department-actions .toolbar-collapse {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.department-actions .toolbar-collapse:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: #1f2937;
+}
+
+.ship-border {
+  border-bottom: 1px solid #ebeef5;
+  margin: 8px 0;
+}
+
+.department-tree {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dept-tree-node {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 1px 0;
+}
+
+.dept-tree-node:hover {
+  background-color: #f1f5f9;
+}
+
+.dept-tree-node.active {
+  background-color: #e6f4ff;
+  color: #1d4ed8;
+}
+
+.dept-tree-node.context-active {
+  background-color: #e0f2fe;
+}
+
+.dept-tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.dept-tree-toggle:hover {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.dept-tree-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.dept-tree-label {
+  flex: 1;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 右键菜单 */
+.dept-context-menu {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 140px;
+  padding: 4px 0;
+}
+
+.dept-context-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dept-context-menu-item:hover {
+  background: #f1f5f9;
+}
+
+.dept-context-menu-item.danger {
+  color: #dc2626;
+}
+
+.dept-context-menu-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}

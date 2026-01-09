@@ -1,0 +1,46 @@
+.contacts-container {
+  height: calc(100vh - 60px);
+}
+
+.contacts-pane {
+  height: calc(100vh - 60px);
+  overflow: hidden;
+  padding: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.contacts-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  padding: 6px 8px;
+  margin: 0 0 8px;
+  flex-shrink: 0;
+}
+
+.contacts-section {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.contacts-section .contacts-header {
+  flex-shrink: 0;
+}
+
+.split-vertical {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.split-vertical > .gutter {
+  background-color: #e5e7eb;
+  cursor: row-resize;
+}
+
+.split-vertical > .gutter:hover {
+  background-color: #d1d5db;
+}

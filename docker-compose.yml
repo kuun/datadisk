@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: datadisk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-datadisk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-datadisk123}
+      POSTGRES_DB: ${POSTGRES_DB:-datadisk}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-datadisk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - datadisk-network
+
+  # OnlyOffice Document Server
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: datadisk-onlyoffice
+    restart: unless-stopped
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${ONLYOFFICE_SECRET:-DQxdmuXny4Tuq5fTJJ6f8lSiwGSSFt5Z}
+      JWT_HEADER: Authorization
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+      - onlyoffice_logs:/var/log/onlyoffice
+    ports:
+      - "8082:80"
+    networks:
+      - datadisk-network
+
+  # Datadisk Application
+  datadisk:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: datadisk-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      onlyoffice:
+        condition: service_started
+    environment:
+      RUST_LOG: ${RUST_LOG:-info}
+    volumes:
+      - ./docker/datadisk.toml:/app/etc/datadisk.toml:ro
+      - datadisk_data:/app/data
+    ports:
+      - "8080:8080"
+    networks:
+      - datadisk-network
+
+volumes:
+  postgres_data:
+  onlyoffice_data:
+  onlyoffice_logs:
+  datadisk_data:
+
+networks:
+  datadisk-network:
+    driver: bridge

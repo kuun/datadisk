@@ -1,0 +1,199 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  height: 60px;
+  padding: 0 20px;
+  border-bottom: 1px solid #a3a2a2;
+  background: #fff;
+  gap: 16px;
+}
+
+.app-logo img {
+  height: 44px;
+}
+
+.app-nav {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+.nav-pill {
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.nav-pill:hover {
+  background: #e2e8f0;
+  color: #1f2937;
+}
+
+.nav-pill.active {
+  background: #0f172a;
+  color: #fff;
+  border-color: #0f172a;
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.2);
+}
+
+.app-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.avatar-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  width: 38px;
+  padding: 0;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.avatar-trigger:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.avatar-trigger:focus,
+.avatar-trigger:focus-visible,
+.avatar-trigger:active {
+  outline: none;
+  box-shadow: none;
+  border-color: #e2e8f0;
+}
+
+.avatar-ring {
+  display: inline-flex;
+  padding: 1px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.avatar-photo,
+.avatar-fallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex: 0 0 auto;
+}
+
+.avatar-fallback {
+  background: #e2e8f0;
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.user-menu {
+  min-width: 220px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 8px;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
+}
+
+.user-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 8px 8px;
+}
+
+.user-menu-avatar {
+  display: inline-flex;
+  padding: 1px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.user-menu-photo,
+.user-menu-fallback {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex: 0 0 auto;
+}
+
+.user-menu-fallback {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.user-menu-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-menu-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.user-menu-handle {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.user-menu-sep {
+  margin: 4px 0 6px;
+}
+
+.user-menu-item {
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.user-menu-item:focus,
+.user-menu-item[data-highlighted] {
+  background: #f1f5f9;
+}
+
+.user-menu-item.danger {
+  color: #b91c1c;
+}
+
+.app-main {
+  flex: 1;
+  overflow: hidden;
+}

@@ -1,0 +1,63 @@
+.settings-container {
+  padding: 20px;
+}
+
+.settings-form {
+  width: 66.67%;
+  margin: 0 auto 20px;
+}
+
+.settings-card {
+  margin-bottom: 20px;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px 16px;
+  align-items: center;
+}
+
+.settings-actions {
+  margin-top: 16px;
+}
+
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.avatar-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.avatar-container input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px dashed #e2e8f0;
+}
+
+.avatar-placeholder {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 1px dashed #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 32px;
+}

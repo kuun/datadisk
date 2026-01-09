@@ -1,0 +1,150 @@
+.group-user-manager {
+  height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-user-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.group-user-actions .toolbar-segment {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.group-user-actions .segment-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #475569;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(148, 163, 184, 0.35);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.group-user-actions .segment-btn:last-child {
+  border-right: none;
+}
+
+.group-user-actions .segment-btn:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: #1f2937;
+}
+
+.group-user-actions .segment-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.group-user-table {
+  flex: 1;
+  overflow: auto;
+}
+
+.group-user-table .selected {
+  background-color: #f5f7fa;
+}
+
+/* Tree container for add user dialog */
+.dept-user-tree-container {
+  max-height: 40vh;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 0;
+}
+
+.dept-user-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  cursor: default;
+  user-select: none;
+}
+
+.dept-user-tree-node:hover {
+  background: #f8fafc;
+}
+
+.dept-user-tree-node.user {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.dept-user-tree-node.user:hover {
+  background: #eff6ff;
+}
+
+.dept-user-tree-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dept-user-tree-toggle:hover {
+  color: #334155;
+}
+
+.dept-user-tree-label {
+  flex: 1;
+  font-size: 14px;
+  color: #334155;
+}
+
+.dept-user-tree-label.dept {
+  font-weight: 500;
+  color: #475569;
+}
+
+.dept-user-tree-node.user .dept-user-tree-label {
+  color: #1e40af;
+}
+
+.dept-user-count {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+.dept-user-tree-children {
+  /* Children container */
+}
+
+/* Checkbox partial state */
+.dept-user-tree-node [data-state="checked"].partial::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 2px;
+  background: white;
+}
+
+/* Selected count */
+.selected-count {
+  font-size: 13px;
+  color: #64748b;
+  text-align: right;
+  padding: 4px 0;
+}

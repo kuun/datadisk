@@ -1,0 +1,76 @@
+.role-manager {
+  height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+}
+
+.role-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.role-actions .toolbar-segment {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.role-actions .segment-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #475569;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(148, 163, 184, 0.35);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.role-actions .segment-btn:last-child {
+  border-right: none;
+}
+
+.role-actions .segment-btn:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: #1f2937;
+}
+
+.role-actions .segment-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.role-actions .toolbar-collapse {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.role-actions .toolbar-collapse:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: #1f2937;
+}
+
+.role-table {
+  flex: 1;
+  overflow: auto;
+}
+
+.role-table .selected {
+  background-color: #f5f7fa;
+}
+
+.ship-border {
+  border-bottom: 1px solid #ebeef5;
+  margin: 8px 0;
+}

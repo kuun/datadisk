@@ -1,0 +1,21 @@
+.group-container {
+  height: calc(100vh - 60px);
+}
+
+.group-pane {
+  height: calc(100vh - 60px);
+  overflow: hidden;
+  padding: 8px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.group-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  padding: 6px 8px;
+  margin: 0 0 8px;
+  flex-shrink: 0;
+}

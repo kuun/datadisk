@@ -10,6 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 import './UserManager.css'
 
+const DEFAULT_PERMISSION_OPTIONS = [
+  { key: 'file', label: '文件管理', description: '上传、下载、创建、删除文件' },
+  { key: 'contacts', label: '通讯录', description: '管理用户、部门' },
+  { key: 'role', label: '角色管理', description: '管理角色与角色权限' },
+  { key: 'group', label: '群组', description: '管理群组及群组成员' },
+  { key: 'audit', label: '审计', description: '查看操作日志' }
+]
+
 const UserManager = ({ roles = [] }) => {
   const { selectedContacts } = useContacts()
   const [userList, setUserList] = useState([])
@@ -23,10 +31,14 @@ const UserManager = ({ roles = [] }) => {
     email: '',
     password: '',
     nextPwd: '',
-    quota: 1,
+    quota: '',
     quotaUnit: 'GB',
-    role: null
+    role: null,
+    permissions: [],
+    inheritPermissions: true,
+    inheritQuota: true
   })
+  const [permissionOptions, setPermissionOptions] = useState(DEFAULT_PERMISSION_OPTIONS)
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, user: null })
   const [pwdDialogVisible, setPwdDialogVisible] = useState(false)
   const [pwdForm, setPwdForm] = useState({ password: '', nextPwd: '' })
@@ -53,6 +65,22 @@ const UserManager = ({ roles = [] }) => {
     refreshUser()
   }, [selectedContacts?.id])
 
+  useEffect(() => {
+    http
+      .get('/api/role/permissions')
+      .then((resp) => {
+        if (resp.data.success) {
+          const options = (resp.data.data || []).map((item) => ({
+            key: item.key,
+            label: item.label || item.name,
+            description: item.description || ''
+          }))
+          setPermissionOptions(options.length ? options : DEFAULT_PERMISSION_OPTIONS)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   const preAdd = () => {
     if (!selectedContacts) {
       alertError('请先选择一个部门')
@@ -66,9 +94,12 @@ const UserManager = ({ roles = [] }) => {
       email: '',
       password: '',
       nextPwd: '',
-      quota: 1,
+      quota: '',
       quotaUnit: 'GB',
-      role: null
+      role: null,
+      permissions: [],
+      inheritPermissions: true,
+      inheritQuota: true
     })
     setDialogVisible(true)
   }
@@ -102,7 +133,10 @@ const UserManager = ({ roles = [] }) => {
       password: userForm.password,
       departmentId: selectedContacts.id,
       role: userForm.role || null,
-      quota: `${userForm.quota} ${userForm.quotaUnit}`
+      quota: userForm.inheritQuota || !userForm.quota
+        ? ''
+        : `${userForm.quota} ${userForm.quotaUnit}`,
+      permissions: userForm.inheritPermissions ? '' : userForm.permissions.join(',')
     }
     try {
       const resp = await http.post('/api/user/add', data)
@@ -131,7 +165,10 @@ const UserManager = ({ roles = [] }) => {
       departmentId: selectedContacts.id,
       deptName: userForm.deptName,
       role: userForm.role || null,
-      quota: `${userForm.quota} ${userForm.quotaUnit}`
+      quota: userForm.inheritQuota || !userForm.quota
+        ? ''
+        : `${userForm.quota} ${userForm.quotaUnit}`,
+      permissions: userForm.inheritPermissions ? '' : userForm.permissions.join(',')
     }
     const resp = await http.post('/api/user/update', data)
     if (resp.data.code) {
@@ -246,15 +283,20 @@ const UserManager = ({ roles = [] }) => {
   const handleEditFromContext = () => {
     const user = contextMenu.user
     closeContextMenu()
-    const [quotaValue, quotaUnit] = (user.quota || '1 GB').split(' ')
+    const [quotaValue, quotaUnit] = (user.quota || '').split(' ')
+    const inheritQuota = !user.quota
+    const directPermissions = user.permissionList || []
     setTitle('修改')
     setUserForm({
       ...user,
       password: '',
       nextPwd: '',
-      quota: quotaValue,
+      quota: inheritQuota ? '' : quotaValue,
       quotaUnit: quotaUnit || 'GB',
-      role: user.role || null
+      role: user.role || null,
+      permissions: directPermissions,
+      inheritPermissions: directPermissions.length === 0,
+      inheritQuota
     })
     setDialogVisible(true)
   }
@@ -389,7 +431,7 @@ const UserManager = ({ roles = [] }) => {
                 <TableCell>{getRoleDisplayName(row.role)}</TableCell>
                 <TableCell>{row.phone}</TableCell>
                 <TableCell>{row.email}</TableCell>
-                <TableCell>{row.quota}</TableCell>
+                <TableCell>{row.effectiveQuota || row.quota || '-'}</TableCell>
                 <TableCell>{row.status === 0 ? '未登录' : row.status === 1 ? '正常' : row.status === 2 ? '禁用' : '未知'}</TableCell>
                 <TableCell>{row.lastLogin ? new Date(row.lastLogin * 1000).toLocaleString('zh-CN') : '-'}</TableCell>
               </TableRow>
@@ -468,15 +510,67 @@ const UserManager = ({ roles = [] }) => {
               <Input
                 type="number"
                 value={userForm.quota}
+                disabled={userForm.inheritQuota}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, quota: event.target.value }))}
               />
               <select
                 value={userForm.quotaUnit}
+                disabled={userForm.inheritQuota}
                 onChange={(event) => setUserForm((prev) => ({ ...prev, quotaUnit: event.target.value }))}
               >
                 <option value="GB">GB</option>
                 <option value="MB">MB</option>
               </select>
+            </div>
+            <label />
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={userForm.inheritQuota}
+                onChange={(event) => setUserForm((prev) => ({ ...prev, inheritQuota: event.target.checked }))}
+              />
+              继承部门配额
+            </label>
+            <label>权限</label>
+            <div>
+              <div className="grid grid-cols-2 gap-3">
+                {permissionOptions.map((perm) => (
+                  <div key={perm.key} className="flex items-start space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`user-perm-${perm.key}`}
+                      checked={userForm.permissions.includes(perm.key)}
+                      disabled={userForm.inheritPermissions}
+                      onChange={(event) => {
+                        const checked = event.target.checked
+                        setUserForm((prev) => {
+                          const current = prev.permissions || []
+                          const next = checked
+                            ? [...current, perm.key]
+                            : current.filter((p) => p !== perm.key)
+                          return { ...prev, permissions: next }
+                        })
+                      }}
+                    />
+                    <div className="grid gap-0.5 leading-none">
+                      <label htmlFor={`user-perm-${perm.key}`} className="text-sm font-medium">
+                        {perm.label}
+                      </label>
+                      <p className="text-xs text-muted-foreground">{perm.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <label className="mt-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={userForm.inheritPermissions}
+                  onChange={(event) =>
+                    setUserForm((prev) => ({ ...prev, inheritPermissions: event.target.checked }))
+                  }
+                />
+                继承部门权限
+              </label>
             </div>
           </div>
           <DialogFooter>

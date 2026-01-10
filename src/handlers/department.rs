@@ -3,7 +3,7 @@
 //! Implements department CRUD operations
 
 use axum::{
-    extract::Query,
+    extract::{Query, State},
     response::Json,
     Extension,
 };
@@ -16,7 +16,9 @@ use crate::entity::department;
 use crate::handlers::audit::service::log_operation;
 use crate::middleware::auth::CurrentUser;
 use crate::middleware::DbConn;
+use crate::permission::normalize_permissions;
 use crate::routes::ApiResponse;
+use crate::state::AppState;
 
 // Operation types (matching Go version)
 const OP_CREATE_DEPT: &str = "创建部门信息";
@@ -37,6 +39,8 @@ pub struct AddDepartmentRequest {
     pub level: Option<i32>,
     #[serde(rename = "parentId")]
     pub parent_id: Option<i64>,
+    pub quota: Option<String>,
+    pub permissions: Option<String>,
 }
 
 /// Update department request
@@ -49,6 +53,8 @@ pub struct UpdateDepartmentRequest {
     pub parent_id: Option<i64>,
     #[serde(rename = "parentName")]
     pub parent_name: Option<String>,
+    pub quota: Option<String>,
+    pub permissions: Option<String>,
 }
 
 /// Department response
@@ -61,6 +67,10 @@ pub struct DepartmentResponse {
     pub parent_id: i64,
     #[serde(rename = "parentName")]
     pub parent_name: String,
+    pub quota: Option<String>,
+    pub permissions: String,
+    #[serde(rename = "permissionList")]
+    pub permission_list: Vec<String>,
 }
 
 impl From<department::Model> for DepartmentResponse {
@@ -71,6 +81,9 @@ impl From<department::Model> for DepartmentResponse {
             level: m.level,
             parent_id: m.parent_id,
             parent_name: m.parent_name,
+            quota: m.quota,
+            permissions: String::new(),
+            permission_list: Vec::new(),
         }
     }
 }
@@ -83,6 +96,7 @@ pub struct IdQuery {
 
 /// POST /api/departments/add
 pub async fn add_department(
+    State(state): State<AppState>,
     Extension(db): Extension<DbConn>,
     Extension(user): Extension<CurrentUser>,
     Json(req): Json<AddDepartmentRequest>,
@@ -124,11 +138,25 @@ pub async fn add_department(
         level: Set(req.level.unwrap_or(1)),
         parent_id: Set(parent_id),
         parent_name: Set(parent_name.clone()),
+        quota: Set(req.quota.clone()),
         ..Default::default()
     };
 
     match new_dept.insert(&*db).await {
         Ok(dept) => {
+            if let Some(perm_enforcer) = state.get_perm().await.as_ref() {
+                if let Err(e) = perm_enforcer.set_department_parent(dept.id, Some(parent_id)).await {
+                    tracing::error!("Failed to set department parent: {}", e);
+                }
+                if let Some(perms) = req.permissions.as_deref() {
+                    let perm_list = normalize_permissions(perms);
+                    let perm_refs: Vec<&str> = perm_list.iter().map(String::as_str).collect();
+                    if let Err(e) = perm_enforcer.set_department_permissions(dept.id, &perm_refs).await {
+                        tracing::error!("Failed to set department permissions: {}", e);
+                    }
+                }
+            }
+
             // Log operation
             let op_desc = if parent_name.is_empty() {
                 format!("部门名称: {}", req.name)
@@ -136,7 +164,18 @@ pub async fn add_department(
                 format!("部门名称: {}/{}", parent_name, req.name)
             };
             log_operation(&user.username, OP_CREATE_DEPT, &op_desc, OP_SUCCESS, None);
-            Json(ApiResponse::success(Some(DepartmentResponse::from(dept))))
+            let mut response = DepartmentResponse::from(dept);
+            if let Some(ref enforcer) = state.get_perm().await {
+                if let Ok(perms) = enforcer.get_department_permissions(response.id).await {
+                    response.permissions = perms.join(",");
+                    response.permission_list = perms;
+                }
+            } else if let Some(perms) = req.permissions.as_deref() {
+                let perm_list = normalize_permissions(perms);
+                response.permissions = perm_list.join(",");
+                response.permission_list = perm_list;
+            }
+            Json(ApiResponse::success(Some(response)))
         }
         Err(e) => {
             tracing::error!("Failed to create department: {}", e);
@@ -147,6 +186,7 @@ pub async fn add_department(
 
 /// POST /api/department/delete
 pub async fn delete_department(
+    State(state): State<AppState>,
     Extension(db): Extension<DbConn>,
     Extension(user): Extension<CurrentUser>,
     Query(query): Query<IdQuery>,
@@ -185,6 +225,12 @@ pub async fn delete_department(
 
     match department::Entity::delete_by_id(query.id).exec(&*db).await {
         Ok(_) => {
+            if let Some(perm_enforcer) = state.get_perm().await.as_ref() {
+                if let Err(e) = perm_enforcer.remove_department(query.id).await {
+                    tracing::error!("Failed to remove department permissions: {}", e);
+                }
+            }
+
             // Log operation
             let op_desc = if dept_info.parent_name.is_empty() {
                 format!("部门名称: {}", dept_info.name)
@@ -203,6 +249,7 @@ pub async fn delete_department(
 
 /// POST /api/department/update
 pub async fn update_department(
+    State(state): State<AppState>,
     Extension(db): Extension<DbConn>,
     Extension(user): Extension<CurrentUser>,
     Json(req): Json<UpdateDepartmentRequest>,
@@ -234,17 +281,44 @@ pub async fn update_department(
         Ok(None) => {}
     }
 
-    let parent_name = req.parent_name.clone().unwrap_or_default();
+    let existing_dept = department::Entity::find_by_id(req.id)
+        .one(&*db)
+        .await;
+
+    let old_dept = match existing_dept {
+        Ok(Some(d)) => d,
+        Ok(None) => return Json(ApiResponse::error(400, "部门不存在")),
+        Err(e) => {
+            tracing::error!("Database error: {}", e);
+            return Json(ApiResponse::error(500, "internal error"));
+        }
+    };
+
+    let parent_name = req.parent_name.clone().unwrap_or_else(|| old_dept.parent_name.clone());
     let update_model = department::ActiveModel {
         id: Set(req.id),
         name: Set(req.name.clone()),
         level: Set(req.level.unwrap_or(1)),
         parent_id: Set(parent_id),
         parent_name: Set(parent_name.clone()),
+        quota: Set(req.quota.clone().or(old_dept.quota.clone())),
     };
 
     match update_model.update(&*db).await {
         Ok(dept) => {
+            if let Some(perm_enforcer) = state.get_perm().await.as_ref() {
+                if let Err(e) = perm_enforcer.set_department_parent(dept.id, Some(parent_id)).await {
+                    tracing::error!("Failed to update department parent: {}", e);
+                }
+                if let Some(perms) = req.permissions.as_deref() {
+                    let perm_list = normalize_permissions(perms);
+                    let perm_refs: Vec<&str> = perm_list.iter().map(String::as_str).collect();
+                    if let Err(e) = perm_enforcer.set_department_permissions(dept.id, &perm_refs).await {
+                        tracing::error!("Failed to update department permissions: {}", e);
+                    }
+                }
+            }
+
             // Log operation
             let op_desc = if parent_name.is_empty() {
                 format!("部门名称: {}", req.name)
@@ -252,7 +326,13 @@ pub async fn update_department(
                 format!("部门名称: {}/{}", parent_name, req.name)
             };
             log_operation(&user.username, OP_UPDATE_DEPT, &op_desc, OP_SUCCESS, None);
-            Json(ApiResponse::success(Some(DepartmentResponse::from(dept))))
+            let mut response = DepartmentResponse::from(dept);
+            if let Some(perms) = req.permissions.as_deref() {
+                let perm_list = normalize_permissions(perms);
+                response.permissions = perm_list.join(",");
+                response.permission_list = perm_list;
+            }
+            Json(ApiResponse::success(Some(response)))
         }
         Err(e) => {
             tracing::error!("Failed to update department: {}", e);
@@ -270,6 +350,7 @@ pub struct DeptQueryResponse {
 
 /// GET /api/department/query
 pub async fn get_departments(
+    State(state): State<AppState>,
     Extension(db): Extension<DbConn>,
     Extension(user): Extension<CurrentUser>,
 ) -> Json<DeptQueryResponse> {
@@ -279,7 +360,18 @@ pub async fn get_departments(
         .await
     {
         Ok(depts) => {
-            let response: Vec<DepartmentResponse> = depts.into_iter().map(|d| d.into()).collect();
+            let perm_enforcer = state.get_perm().await;
+            let mut response: Vec<DepartmentResponse> = Vec::new();
+            for d in depts {
+                let mut item: DepartmentResponse = d.into();
+                if let Some(ref enforcer) = perm_enforcer {
+                    if let Ok(perms) = enforcer.get_department_permissions(item.id).await {
+                        item.permissions = perms.join(",");
+                        item.permission_list = perms;
+                    }
+                }
+                response.push(item);
+            }
             // Log operation
             log_operation(&user.username, OP_QUERY_DEPT, "", OP_SUCCESS, None);
             Json(DeptQueryResponse {

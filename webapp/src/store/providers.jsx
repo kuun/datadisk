@@ -10,6 +10,7 @@ const FileContext = createContext(null)
 // Permission constants
 const PERM_FILE = 'file'
 const PERM_CONTACTS = 'contacts'
+const PERM_ROLE = 'role'
 const PERM_GROUP = 'group'
 const PERM_AUDIT = 'audit'
 const PERM_ALL = '*'
@@ -68,6 +69,7 @@ export const LoginProvider = ({ children }) => {
 
   const canFile = hasPermission(PERM_FILE)
   const canContacts = hasPermission(PERM_CONTACTS)
+  const canRole = hasPermission(PERM_ROLE)
   const canGroup = hasPermission(PERM_GROUP)
   const canAudit = hasPermission(PERM_AUDIT)
 
@@ -79,6 +81,7 @@ export const LoginProvider = ({ children }) => {
       permissionsLoaded,
       canFile,
       canContacts,
+      canRole,
       canGroup,
       canAudit,
       hasPermission,

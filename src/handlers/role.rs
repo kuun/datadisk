@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::handlers::audit::service::log_operation;
 use crate::middleware::auth::CurrentUser;
-use crate::permission::{perm, RoleInfo};
+use crate::permission::{normalize_permissions, perm, RoleInfo};
 use crate::routes::ApiResponse;
 use crate::state::AppState;
 
@@ -21,9 +21,9 @@ const OP_DELETE_ROLE: &str = "删除角色";
 const OP_UPDATE_ROLE: &str = "修改角色";
 const OP_SUCCESS: &str = "成功";
 
-/// Check if user has contacts permission (for role management)
+/// Check if user has role management permission
 fn can_manage_roles(user: &CurrentUser) -> bool {
-    user.can_contacts()
+    user.can_role()
 }
 
 /// Add role request
@@ -108,8 +108,8 @@ pub async fn add_role(
     }
 
     // Normalize and validate permissions
-    let permissions = normalize_permissions(&req.permissions);
-    let perm_list: Vec<&str> = permissions.split(',').filter(|s| !s.is_empty()).collect();
+    let perm_list_vec = normalize_permissions(&req.permissions);
+    let perm_list: Vec<&str> = perm_list_vec.iter().map(String::as_str).collect();
 
     // Create role in Casbin
     if let Err(e) = perm_enforcer.create_role(&req.name, &perm_list).await {
@@ -123,8 +123,8 @@ pub async fn add_role(
     Json(ApiResponse::success(Some(RoleResponse {
         name: req.name,
         description: req.description,
-        permissions: permissions.clone(),
-        permission_list: perm_list.into_iter().map(String::from).collect(),
+        permissions: perm_list_vec.join(","),
+        permission_list: perm_list_vec,
     })))
 }
 
@@ -213,8 +213,8 @@ pub async fn update_role(
     }
 
     // Normalize and validate permissions
-    let permissions = normalize_permissions(&req.permissions);
-    let perm_list: Vec<&str> = permissions.split(',').filter(|s| !s.is_empty()).collect();
+    let perm_list_vec = normalize_permissions(&req.permissions);
+    let perm_list: Vec<&str> = perm_list_vec.iter().map(String::as_str).collect();
 
     // Update role in Casbin
     if let Err(e) = perm_enforcer.update_role(old_name, &req.name, &perm_list).await {
@@ -228,8 +228,8 @@ pub async fn update_role(
     Json(ApiResponse::success(Some(RoleResponse {
         name: req.name,
         description: req.description,
-        permissions: permissions.clone(),
-        permission_list: perm_list.into_iter().map(String::from).collect(),
+        permissions: perm_list_vec.join(","),
+        permission_list: perm_list_vec,
     })))
 }
 
@@ -299,7 +299,12 @@ pub async fn get_available_permissions() -> Json<PermissionsResponse> {
         PermissionInfo {
             key: perm::CONTACTS.to_string(),
             name: "通讯录".to_string(),
-            description: "管理用户、部门、角色".to_string(),
+            description: "管理用户、部门".to_string(),
+        },
+        PermissionInfo {
+            key: perm::ROLE.to_string(),
+            name: "角色管理".to_string(),
+            description: "管理角色与角色权限".to_string(),
         },
         PermissionInfo {
             key: perm::GROUP.to_string(),
@@ -317,19 +322,4 @@ pub async fn get_available_permissions() -> Json<PermissionsResponse> {
         success: true,
         data: permissions,
     })
-}
-
-/// Normalize permissions string (remove duplicates, validate, sort)
-fn normalize_permissions(permissions: &str) -> String {
-    let valid_perms: std::collections::HashSet<&str> = perm::ALL.iter().copied().collect();
-
-    let mut perms: Vec<&str> = permissions
-        .split(',')
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty() && valid_perms.contains(s))
-        .collect();
-
-    perms.sort();
-    perms.dedup();
-    perms.join(",")
 }

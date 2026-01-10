@@ -29,6 +29,14 @@ const buildTree = (items) => {
   return roots
 }
 
+const DEFAULT_PERMISSION_OPTIONS = [
+  { key: 'file', label: '文件管理', description: '上传、下载、创建、删除文件' },
+  { key: 'contacts', label: '通讯录', description: '管理用户、部门' },
+  { key: 'role', label: '角色管理', description: '管理角色与角色权限' },
+  { key: 'group', label: '群组', description: '管理群组及群组成员' },
+  { key: 'audit', label: '审计', description: '查看操作日志' }
+]
+
 const TreeNode = ({ node, level, expandedKeys, selectedId, contextMenuNodeId, onToggle, onSelect, onContextMenu }) => {
   const hasChildren = node.children && node.children.length > 0
   const isExpanded = expandedKeys.has(node.id)
@@ -95,7 +103,8 @@ const DepartmentManager = () => {
   const [departments, setDepartments] = useState([])
   const [dialogVisible, setDialogVisible] = useState(false)
   const [dialogTitle, setDialogTitle] = useState('添加')
-  const [departmentForm, setDepartmentForm] = useState({ name: '' })
+  const [departmentForm, setDepartmentForm] = useState({ name: '', permissions: [], quota: '' })
+  const [permissionOptions, setPermissionOptions] = useState(DEFAULT_PERMISSION_OPTIONS)
   const [visibleCount, setVisibleCount] = useState(4)
   const [expandedKeys, setExpandedKeys] = useState(new Set())
   const containerRef = useRef(null)
@@ -109,6 +118,19 @@ const DepartmentManager = () => {
 
   useEffect(() => {
     loadDepartments()
+    http
+      .get('/api/role/permissions')
+      .then((resp) => {
+        if (resp.data.success) {
+          const options = (resp.data.data || []).map((item) => ({
+            key: item.key,
+            label: item.label || item.name,
+            description: item.description || ''
+          }))
+          setPermissionOptions(options.length ? options : DEFAULT_PERMISSION_OPTIONS)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   const treeData = useMemo(() => buildTree(departments), [departments])
@@ -158,7 +180,9 @@ const DepartmentManager = () => {
       name: node.name,
       level: node.level,
       parentId: node.parentId,
-      parentName: node.parentName
+      parentName: node.parentName,
+      permissions: node.permissionList || [],
+      quota: node.quota || ''
     })
     setDialogVisible(true)
   }
@@ -187,9 +211,15 @@ const DepartmentManager = () => {
     closeContextMenu()
     setDialogTitle('添加')
     if (parentNode) {
-      setDepartmentForm({ name: '', parentId: parentNode.id, level: parentNode.level + 1 })
+      setDepartmentForm({
+        name: '',
+        parentId: parentNode.id,
+        level: parentNode.level + 1,
+        permissions: [],
+        quota: ''
+      })
     } else {
-      setDepartmentForm({ name: '' })
+      setDepartmentForm({ name: '', permissions: [], quota: '' })
     }
     setDialogVisible(true)
   }
@@ -215,7 +245,9 @@ const DepartmentManager = () => {
       const payload = {
         name: departmentForm.name,
         parentId: parentId,
-        level: level
+        level: level,
+        quota: departmentForm.quota || '',
+        permissions: (departmentForm.permissions || []).join(',')
       }
       const resp = await http.post('/api/departments/add', payload)
       if (resp.data.code) {
@@ -235,7 +267,12 @@ const DepartmentManager = () => {
       return
     }
     try {
-      const resp = await http.post('/api/department/update', departmentForm)
+      const payload = {
+        ...departmentForm,
+        quota: departmentForm.quota || '',
+        permissions: (departmentForm.permissions || []).join(',')
+      }
+      const resp = await http.post('/api/department/update', payload)
       if (resp.data.code) {
         setDialogVisible(false)
         await loadDepartments()
@@ -360,6 +397,45 @@ const DepartmentManager = () => {
                 value={departmentForm.name}
                 onChange={(event) => setDepartmentForm((prev) => ({ ...prev, name: event.target.value }))}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dept-quota">配额</Label>
+              <Input
+                id="dept-quota"
+                value={departmentForm.quota}
+                placeholder="如 10 GB，留空继承上级"
+                onChange={(event) => setDepartmentForm((prev) => ({ ...prev, quota: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>权限</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {permissionOptions.map((perm) => (
+                  <div key={perm.key} className="flex items-start space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`dept-perm-${perm.key}`}
+                      checked={departmentForm.permissions?.includes(perm.key)}
+                      onChange={(event) => {
+                        const checked = event.target.checked
+                        setDepartmentForm((prev) => {
+                          const current = prev.permissions || []
+                          const next = checked
+                            ? [...current, perm.key]
+                            : current.filter((p) => p !== perm.key)
+                          return { ...prev, permissions: next }
+                        })
+                      }}
+                    />
+                    <div className="grid gap-0.5 leading-none">
+                      <Label htmlFor={`dept-perm-${perm.key}`} className="text-sm font-medium">
+                        {perm.label}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">{perm.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>

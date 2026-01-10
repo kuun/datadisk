@@ -66,6 +66,11 @@ impl CurrentUser {
         self.has_permission(perm::CONTACTS)
     }
 
+    /// Check if the user has role management permission
+    pub fn can_role(&self) -> bool {
+        self.has_permission(perm::ROLE)
+    }
+
     /// Check if the user has group permission
     pub fn can_group(&self) -> bool {
         self.has_permission(perm::GROUP)
@@ -203,4 +208,3 @@ pub async fn auth_layer(
         }
     }
 }
-

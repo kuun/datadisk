@@ -16,9 +16,10 @@ import { Label } from './ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 import './RoleManager.css'
 
-const PERMISSION_OPTIONS = [
+const DEFAULT_PERMISSION_OPTIONS = [
   { key: 'file', label: '文件管理', description: '上传、下载、创建、删除文件' },
-  { key: 'contacts', label: '通讯录', description: '管理用户、部门、角色' },
+  { key: 'contacts', label: '通讯录', description: '管理用户、部门' },
+  { key: 'role', label: '角色管理', description: '管理角色与角色权限' },
   { key: 'group', label: '群组', description: '管理群组及群组成员' },
   { key: 'audit', label: '审计', description: '查看操作日志' }
 ]
@@ -26,6 +27,7 @@ const PERMISSION_OPTIONS = [
 const RoleManager = ({ onRolesChange }) => {
   const [roles, setRoles] = useState([])
   const [selectedRole, setSelectedRole] = useState(null)
+  const [permissionOptions, setPermissionOptions] = useState(DEFAULT_PERMISSION_OPTIONS)
   const [dialogVisible, setDialogVisible] = useState(false)
   const [dialogTitle, setDialogTitle] = useState('添加角色')
   const [roleForm, setRoleForm] = useState({ name: '', description: '', permissions: [] })
@@ -48,6 +50,19 @@ const RoleManager = ({ onRolesChange }) => {
 
   useEffect(() => {
     loadRoles()
+    http
+      .get('/api/role/permissions')
+      .then((resp) => {
+        if (resp.data.success) {
+          const options = (resp.data.data || []).map((item) => ({
+            key: item.key,
+            label: item.label || item.name,
+            description: item.description || ''
+          }))
+          setPermissionOptions(options.length ? options : DEFAULT_PERMISSION_OPTIONS)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   const preAdd = () => {
@@ -171,7 +186,7 @@ const RoleManager = ({ onRolesChange }) => {
     if (!permList || permList.length === 0) return '-'
     return permList
       .map((p) => {
-        const opt = PERMISSION_OPTIONS.find((o) => o.key === p)
+        const opt = permissionOptions.find((o) => o.key === p)
         return opt ? opt.label : p
       })
       .join(', ')
@@ -270,7 +285,7 @@ const RoleManager = ({ onRolesChange }) => {
             <div className="space-y-2">
               <Label>权限</Label>
               <div className="grid grid-cols-2 gap-3">
-                {PERMISSION_OPTIONS.map((perm) => (
+                {permissionOptions.map((perm) => (
                   <div key={perm.key} className="flex items-start space-x-2">
                     <Checkbox
                       id={`perm-${perm.key}`}

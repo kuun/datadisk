@@ -18,6 +18,7 @@ use crate::entity::user;
 use crate::handlers::audit::service::log_operation;
 use crate::middleware::auth::CurrentUser;
 use crate::middleware::DbConn;
+use crate::permission::normalize_permissions;
 use crate::routes::ApiResponse;
 use crate::state::AppState;
 
@@ -74,6 +75,7 @@ pub struct AddUserRequest {
     /// Role name (e.g., "admin", "user")
     pub role: Option<String>,
     pub quota: Option<String>,
+    pub permissions: Option<String>,
 }
 
 /// Update user request
@@ -93,6 +95,7 @@ pub struct UpdateUserRequest {
     /// Role name (e.g., "admin", "user")
     pub role: Option<String>,
     pub quota: Option<String>,
+    pub permissions: Option<String>,
 }
 
 /// Delete user request (array of users)
@@ -123,11 +126,22 @@ pub struct UserResponse {
     pub role: Option<String>,
     pub status: i32,
     pub quota: Option<String>,
+    #[serde(rename = "effectiveQuota")]
+    pub effective_quota: Option<String>,
+    pub permissions: String,
+    #[serde(rename = "permissionList")]
+    pub permission_list: Vec<String>,
 }
 
 impl UserResponse {
     /// Create from user model with role from Casbin
-    pub fn from_model_with_role(m: user::Model, role: Option<String>) -> Self {
+    pub fn from_model_with_role(
+        m: user::Model,
+        role: Option<String>,
+        direct_permissions: Vec<String>,
+        effective_quota: Option<String>,
+    ) -> Self {
+        let permissions = direct_permissions.join(",");
         Self {
             id: m.id,
             username: m.username,
@@ -140,13 +154,16 @@ impl UserResponse {
             role,
             status: m.status,
             quota: m.quota,
+            effective_quota,
+            permissions,
+            permission_list: direct_permissions,
         }
     }
 }
 
 impl From<user::Model> for UserResponse {
     fn from(m: user::Model) -> Self {
-        Self::from_model_with_role(m, None)
+        Self::from_model_with_role(m, None, Vec::new(), None)
     }
 }
 
@@ -221,6 +238,7 @@ pub async fn add_user(
     };
 
     let dept_name = get_department_name(&*db, req.department_id).await;
+    let quota = normalize_quota(req.quota.clone());
 
     let new_user = user::ActiveModel {
         username: Set(req.username.clone()),
@@ -231,7 +249,7 @@ pub async fn add_user(
         department_id: Set(req.department_id),
         dept_name: Set(dept_name.clone()),
         status: Set(0),
-        quota: Set(req.quota),
+        quota: Set(quota),
         last_login: Set(0),
         ..Default::default()
     };
@@ -245,11 +263,23 @@ pub async fn add_user(
                 return Json(BoolCodeResponse::error("创建用户目录失败"));
             }
 
-            // Assign role via Casbin if specified
-            if let Some(role) = &req.role {
-                if let Some(perm_enforcer) = state.get_perm().await.as_ref() {
+            if let Some(perm_enforcer) = state.get_perm().await.as_ref() {
+                // Assign role via Casbin if specified
+                if let Some(role) = &req.role {
                     if let Err(e) = perm_enforcer.set_user_role(&req.username, Some(role)).await {
                         tracing::error!("Failed to assign role: {}", e);
+                    }
+                }
+                // Assign department for permission inheritance
+                if let Err(e) = perm_enforcer.set_user_department(&req.username, req.department_id).await {
+                    tracing::error!("Failed to assign department: {}", e);
+                }
+                // Set direct user permissions if provided
+                if let Some(perms) = req.permissions.as_deref() {
+                    let perm_list = normalize_permissions(perms);
+                    let perm_refs: Vec<&str> = perm_list.iter().map(String::as_str).collect();
+                    if let Err(e) = perm_enforcer.set_permissions(&req.username, &perm_refs).await {
+                        tracing::error!("Failed to set user permissions: {}", e);
                     }
                 }
             }
@@ -331,7 +361,7 @@ pub async fn delete_user(
 
 /// POST /api/user/update
 pub async fn update_user(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Extension(db): Extension<DbConn>,
     Extension(current_user): Extension<CurrentUser>,
     Json(req): Json<UpdateUserRequest>,
@@ -369,6 +399,11 @@ pub async fn update_user(
     };
 
     let dept_name = get_department_name(&*db, req.department_id).await;
+    let quota = match req.quota.clone() {
+        Some(q) => normalize_quota(Some(q)),
+        None => old_user.quota.clone(),
+    };
+
     let update_model = user::ActiveModel {
         id: Set(req.id),
         username: Set(req.username.clone()),
@@ -379,17 +414,29 @@ pub async fn update_user(
         department_id: Set(req.department_id),
         dept_name: Set(req.dept_name.unwrap_or(old_user.dept_name)),
         status: Set(old_user.status),
-        quota: Set(req.quota),
+        quota: Set(quota),
         last_login: Set(old_user.last_login),
         permissions: Set(old_user.permissions), // Preserve existing permissions
     };
 
     match update_model.update(&*db).await {
         Ok(_) => {
-            // Update role via Casbin
-            if let Some(perm_enforcer) = _state.get_perm().await.as_ref() {
+            if let Some(perm_enforcer) = state.get_perm().await.as_ref() {
+                // Update role via Casbin
                 if let Err(e) = perm_enforcer.set_user_role(&req.username, req.role.as_deref()).await {
                     tracing::error!("Failed to update role: {}", e);
+                }
+                // Update department for permission inheritance
+                if let Err(e) = perm_enforcer.set_user_department(&req.username, req.department_id).await {
+                    tracing::error!("Failed to update department: {}", e);
+                }
+                // Update direct permissions if provided
+                if let Some(perms) = req.permissions.as_deref() {
+                    let perm_list = normalize_permissions(perms);
+                    let perm_refs: Vec<&str> = perm_list.iter().map(String::as_str).collect();
+                    if let Err(e) = perm_enforcer.set_permissions(&req.username, &perm_refs).await {
+                        tracing::error!("Failed to update user permissions: {}", e);
+                    }
                 }
             }
 
@@ -425,12 +472,15 @@ pub async fn get_users_by_dept(
             let mut response: Vec<UserResponse> = Vec::new();
 
             for u in users {
-                let role = if let Some(ref enforcer) = perm_enforcer {
-                    enforcer.get_user_role(&u.username).await.ok().flatten()
+                let (role, direct_permissions) = if let Some(ref enforcer) = perm_enforcer {
+                    let role = enforcer.get_user_role(&u.username).await.ok().flatten();
+                    let perms = enforcer.get_direct_permissions(&u.username).await.unwrap_or_default();
+                    (role, perms)
                 } else {
-                    None
+                    (None, Vec::new())
                 };
-                response.push(UserResponse::from_model_with_role(u, role));
+                let effective_quota = get_effective_quota(&*db, u.department_id, u.quota.clone()).await;
+                response.push(UserResponse::from_model_with_role(u, role, direct_permissions, effective_quota));
             }
 
             // Log operation
@@ -458,12 +508,21 @@ pub async fn get_user_by_username(
     {
         Ok(Some(u)) => {
             // Fetch role from Casbin
-            let role = if let Some(ref enforcer) = state.get_perm().await {
-                enforcer.get_user_role(&u.username).await.ok().flatten()
+            let perm_enforcer = state.get_perm().await;
+            let (role, direct_permissions) = if let Some(ref enforcer) = perm_enforcer {
+                let role = enforcer.get_user_role(&u.username).await.ok().flatten();
+                let perms = enforcer.get_direct_permissions(&u.username).await.unwrap_or_default();
+                (role, perms)
             } else {
-                None
+                (None, Vec::new())
             };
-            Json(ApiResponse::success(Some(UserResponse::from_model_with_role(u, role))))
+            let effective_quota = get_effective_quota(&*db, u.department_id, u.quota.clone()).await;
+            Json(ApiResponse::success(Some(UserResponse::from_model_with_role(
+                u,
+                role,
+                direct_permissions,
+                effective_quota,
+            ))))
         }
         Ok(None) => Json(ApiResponse::error(404, "用户不存在")),
         Err(e) => {
@@ -666,6 +725,45 @@ fn get_department_names(db: &sea_orm::DatabaseConnection, id: i64) -> std::pin::
 /// Helper function to get department name (wrapper for easier use)
 async fn get_department_name(db: &sea_orm::DatabaseConnection, id: i64) -> String {
     get_department_names(db, id).await
+}
+
+fn normalize_quota(quota: Option<String>) -> Option<String> {
+    quota.and_then(|q| {
+        let trimmed = q.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
+/// Resolve effective quota (user overrides department, department inherits parent)
+async fn get_effective_quota(
+    db: &sea_orm::DatabaseConnection,
+    department_id: i64,
+    user_quota: Option<String>,
+) -> Option<String> {
+    if user_quota.is_some() {
+        return user_quota;
+    }
+
+    use crate::entity::department;
+    let mut current_id = department_id;
+
+    while current_id != 0 {
+        match department::Entity::find_by_id(current_id).one(db).await {
+            Ok(Some(dept)) => {
+                if dept.quota.is_some() {
+                    return dept.quota;
+                }
+                current_id = dept.parent_id;
+            }
+            _ => break,
+        }
+    }
+
+    None
 }
 
 /// GET /api/user/avatar/:username - Get user avatar

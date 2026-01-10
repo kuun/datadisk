@@ -86,6 +86,15 @@ async fn add_missing_columns(db: &DatabaseConnection, backend: DbBackend) -> Res
         "VARCHAR(128) DEFAULT ''",
     ).await?;
 
+    // Add quota column to disk_department if not exists
+    add_column_if_not_exists(
+        db,
+        backend,
+        "disk_department",
+        "quota",
+        "VARCHAR(32)",
+    ).await?;
+
     Ok(())
 }
 

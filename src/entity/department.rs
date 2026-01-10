@@ -25,6 +25,10 @@ pub struct Model {
     /// 父部门名称 (冗余字段)
     #[sea_orm(column_type = "String(Some(64))")]
     pub parent_name: String,
+
+    /// 部门配额
+    #[sea_orm(column_type = "String(Some(32))", nullable)]
+    pub quota: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

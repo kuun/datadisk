@@ -13,11 +13,12 @@ use crate::entity::casbin_rule;
 pub mod perm {
     pub const FILE: &str = "file";
     pub const CONTACTS: &str = "contacts";
+    pub const ROLE: &str = "role";
     pub const GROUP: &str = "group";
     pub const AUDIT: &str = "audit";
 
     /// All permissions
-    pub const ALL: [&str; 4] = [FILE, CONTACTS, GROUP, AUDIT];
+    pub const ALL: [&str; 5] = [FILE, CONTACTS, ROLE, GROUP, AUDIT];
 }
 
 /// Action constants
@@ -93,6 +94,18 @@ impl PermissionEnforcer {
         }
 
         permissions
+    }
+
+    /// Get direct permissions assigned to user (not via roles)
+    pub async fn get_direct_permissions(&self, user: &str) -> anyhow::Result<Vec<String>> {
+        let rules = casbin_rule::Entity::find()
+            .filter(casbin_rule::Column::Ptype.eq("p"))
+            .filter(casbin_rule::Column::V0.eq(user))
+            .filter(casbin_rule::Column::V2.eq(Some(action::ACCESS.to_string())))
+            .all(&self.db)
+            .await?;
+
+        Ok(rules.into_iter().map(|r| r.v1).collect())
     }
 
     /// Add policy: user can access resource
@@ -235,6 +248,8 @@ impl PermissionEnforcer {
 
     /// Role name prefix to distinguish from usernames
     pub const ROLE_PREFIX: &'static str = "role:";
+    /// Department role prefix
+    pub const DEPT_PREFIX: &'static str = "dept:";
 
     /// Get prefixed role name
     fn role_name(role: &str) -> String {
@@ -249,6 +264,10 @@ impl PermissionEnforcer {
     /// Extract role name from prefixed string
     fn extract_role_name(prefixed: &str) -> &str {
         prefixed.strip_prefix(Self::ROLE_PREFIX).unwrap_or(prefixed)
+    }
+
+    fn dept_role_name(dept_id: i64) -> String {
+        format!("{}{}", Self::DEPT_PREFIX, dept_id)
     }
 
     /// Create a new role with permissions
@@ -484,15 +503,12 @@ impl PermissionEnforcer {
         let rule = casbin_rule::Entity::find()
             .filter(casbin_rule::Column::Ptype.eq("g"))
             .filter(casbin_rule::Column::V0.eq(user))
+            .filter(casbin_rule::Column::V1.starts_with(Self::ROLE_PREFIX))
             .one(&self.db)
             .await?;
 
         Ok(rule.and_then(|r| {
-            if Self::is_role(&r.v1) {
-                Some(Self::extract_role_name(&r.v1).to_string())
-            } else {
-                None
-            }
+            Some(Self::extract_role_name(&r.v1).to_string())
         }))
     }
 
@@ -512,10 +528,11 @@ impl PermissionEnforcer {
 
     /// Set user's role (replace existing role)
     pub async fn set_user_role(&self, user: &str, role: Option<&str>) -> anyhow::Result<()> {
-        // Remove all existing role assignments for user
+        // Remove all existing app role assignments for user (keep department roles)
         casbin_rule::Entity::delete_many()
             .filter(casbin_rule::Column::Ptype.eq("g"))
             .filter(casbin_rule::Column::V0.eq(user))
+            .filter(casbin_rule::Column::V1.starts_with(Self::ROLE_PREFIX))
             .exec(&self.db)
             .await?;
 
@@ -567,6 +584,137 @@ impl PermissionEnforcer {
 
         Ok(())
     }
+
+    // ==================== Department Permissions ====================
+
+    /// Set department permissions (replace existing)
+    pub async fn set_department_permissions(&self, dept_id: i64, permissions: &[&str]) -> anyhow::Result<()> {
+        let role_name = Self::dept_role_name(dept_id);
+
+        casbin_rule::Entity::delete_many()
+            .filter(casbin_rule::Column::Ptype.eq("p"))
+            .filter(casbin_rule::Column::V0.eq(&role_name))
+            .exec(&self.db)
+            .await?;
+
+        for perm in permissions {
+            let rule = casbin_rule::ActiveModel {
+                ptype: Set("p".to_string()),
+                v0: Set(role_name.clone()),
+                v1: Set(perm.to_string()),
+                v2: Set(Some(action::ACCESS.to_string())),
+                ..Default::default()
+            };
+            rule.insert(&self.db).await?;
+        }
+
+        self.load_policies().await?;
+        Ok(())
+    }
+
+    /// Get department permissions
+    pub async fn get_department_permissions(&self, dept_id: i64) -> anyhow::Result<Vec<String>> {
+        let role_name = Self::dept_role_name(dept_id);
+        let rules = casbin_rule::Entity::find()
+            .filter(casbin_rule::Column::Ptype.eq("p"))
+            .filter(casbin_rule::Column::V0.eq(&role_name))
+            .all(&self.db)
+            .await?;
+
+        Ok(rules.into_iter().map(|r| r.v1).collect())
+    }
+
+    /// Set department parent (role inheritance)
+    pub async fn set_department_parent(&self, dept_id: i64, parent_id: Option<i64>) -> anyhow::Result<()> {
+        let role_name = Self::dept_role_name(dept_id);
+
+        casbin_rule::Entity::delete_many()
+            .filter(casbin_rule::Column::Ptype.eq("g"))
+            .filter(casbin_rule::Column::V0.eq(&role_name))
+            .filter(casbin_rule::Column::V1.starts_with(Self::DEPT_PREFIX))
+            .exec(&self.db)
+            .await?;
+
+        if let Some(parent_id) = parent_id {
+            if parent_id > 0 {
+                let parent_role = Self::dept_role_name(parent_id);
+                let rule = casbin_rule::ActiveModel {
+                    ptype: Set("g".to_string()),
+                    v0: Set(role_name.clone()),
+                    v1: Set(parent_role),
+                    v2: Set(None),
+                    ..Default::default()
+                };
+                rule.insert(&self.db).await?;
+            }
+        }
+
+        self.load_policies().await?;
+        Ok(())
+    }
+
+    /// Assign user to department (used for inherited permissions)
+    pub async fn set_user_department(&self, user: &str, dept_id: i64) -> anyhow::Result<()> {
+        casbin_rule::Entity::delete_many()
+            .filter(casbin_rule::Column::Ptype.eq("g"))
+            .filter(casbin_rule::Column::V0.eq(user))
+            .filter(casbin_rule::Column::V1.starts_with(Self::DEPT_PREFIX))
+            .exec(&self.db)
+            .await?;
+
+        let role_name = Self::dept_role_name(dept_id);
+        let rule = casbin_rule::ActiveModel {
+            ptype: Set("g".to_string()),
+            v0: Set(user.to_string()),
+            v1: Set(role_name),
+            v2: Set(None),
+            ..Default::default()
+        };
+        rule.insert(&self.db).await?;
+
+        self.load_policies().await?;
+        Ok(())
+    }
+
+    /// Remove a department role and related policies
+    pub async fn remove_department(&self, dept_id: i64) -> anyhow::Result<()> {
+        let role_name = Self::dept_role_name(dept_id);
+
+        casbin_rule::Entity::delete_many()
+            .filter(casbin_rule::Column::Ptype.eq("p"))
+            .filter(casbin_rule::Column::V0.eq(&role_name))
+            .exec(&self.db)
+            .await?;
+
+        casbin_rule::Entity::delete_many()
+            .filter(casbin_rule::Column::Ptype.eq("g"))
+            .filter(
+                casbin_rule::Column::V0
+                    .eq(&role_name)
+                    .or(casbin_rule::Column::V1.eq(&role_name)),
+            )
+            .exec(&self.db)
+            .await?;
+
+        self.load_policies().await?;
+        Ok(())
+    }
+}
+
+/// Normalize permissions string into sorted, unique list
+pub fn normalize_permissions(permissions: &str) -> Vec<String> {
+    let valid_perms: std::collections::HashSet<&str> = perm::ALL.iter().copied().collect();
+
+    let mut perms: Vec<String> = permissions
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty() && valid_perms.contains(*s))
+        .map(|s| s.to_string())
+        .collect();
+
+    perms.sort();
+    perms.dedup();
+    perms
 }
 
 /// Role information

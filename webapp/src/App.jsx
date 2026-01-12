@@ -4,6 +4,7 @@ import HomeView from './views/HomeView'
 import LoginView from './views/LoginView'
 import SettingsView from './views/SettingsView'
 import UserSettings from './views/settings/UserSettings'
+import RoleSettings from './views/settings/RoleSettings'
 import FileView from './views/FileView'
 import RecentFileView from './views/file/RecentFileView'
 import MyDocsView from './views/file/MyDocsView'
@@ -34,6 +35,7 @@ const App = () => (
         <Route path="ui/settings" element={<SettingsView />}>
           <Route index element={<Navigate to="user" replace />} />
           <Route path="user" element={<UserSettings />} />
+          <Route path="roles" element={<RoleSettings />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/ui/login" replace />} />

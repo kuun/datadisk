@@ -19,7 +19,7 @@ import './HomeView.css'
 const HomeView = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { setLoginUser, userAvatar, canFile, canContacts, canRole, canGroup, canAudit } = useLogin()
+  const { setLoginUser, userAvatar, canFile, canContacts, canGroup, canAudit } = useLogin()
   const { updateTasks, deleteTask } = useTasks()
   const [username, setUsername] = useState('')
   const [activeIndex, setActiveIndex] = useState('1')
@@ -51,10 +51,9 @@ const HomeView = () => {
         const hasPerm = (p) => hasAll || permList.includes(p)
 
         const path = location.pathname
-        const canAccessContacts = hasPerm('contacts') || hasPerm('role')
         const needsRedirect =
           (path.includes('/ui/file') && !hasPerm('file')) ||
-          (path.includes('/ui/contacts') && !canAccessContacts) ||
+          (path.includes('/ui/contacts') && !hasPerm('contacts')) ||
           (path.includes('/ui/audit') && !hasPerm('audit')) ||
           (path.includes('/ui/group') && !hasPerm('group'))
 
@@ -62,7 +61,7 @@ const HomeView = () => {
           // Redirect to first available permission
           if (hasPerm('file')) {
             navigate('/ui/file', { replace: true })
-          } else if (hasPerm('contacts') || hasPerm('role')) {
+          } else if (hasPerm('contacts')) {
             navigate('/ui/contacts', { replace: true })
           } else if (hasPerm('audit')) {
             navigate('/ui/audit', { replace: true })
@@ -144,7 +143,7 @@ const HomeView = () => {
               {t('menu.files')}
             </button>
           )}
-          {(canContacts || canRole) && (
+          {canContacts && (
             <button
               type="button"
               className={`nav-pill ${activeIndex === '2' ? 'active' : ''}`}

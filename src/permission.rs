@@ -68,6 +68,9 @@ impl PermissionEnforcer {
             }
         }
 
+        // Rebuild role links to avoid stale role hierarchy cache.
+        enforcer.build_role_links()?;
+
         Ok(())
     }
 
